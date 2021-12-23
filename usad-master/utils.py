@@ -33,6 +33,7 @@ def plot_history(history):
     plt.show()
     plt.savefig('./history.jpg')
     
+##这个函数没有用到
 def histogram(y_test,y_pred):
     plt.figure(figsize=(12,6))
     plt.hist([y_pred[y_test==0],

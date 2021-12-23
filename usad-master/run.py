@@ -91,7 +91,6 @@ print("攻击窗口的总维度:{0}".format(windows_attack.shape))
 import torch.utils.data as data_utils
 
 BATCH_SIZE =  7919
-
 N_EPOCHS = 100
 hidden_size = 100
 ##w_size是一个滑动窗口中的数据的总维度(窗口长度*特征数)，也是输入的维度
@@ -145,7 +144,11 @@ results=testing(model,test_loader)
 windows_labels=[]
 for i in range(len(labels)-window_size):
     windows_labels.append(list(np.int_(labels[i:i+window_size])))
+##窗口内有一个异常就是窗口
+##stack沿着一个新维度对张量进行拼接
 y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
 y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
                               results[-1].flatten().detach().cpu().numpy()])
 threshold=ROC(y_test,y_pred)
+##打印异常分数
+print(y_pred)
