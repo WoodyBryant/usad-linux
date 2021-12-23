@@ -15,6 +15,7 @@ def get_default_device():
 
 def to_device(data, device):
     """Move tensor(s) to chosen device"""
+    ##isinstance判断一个对象是否是已知的类型
     if isinstance(data, (list,tuple)):
         return [to_device(x, device) for x in data]
     return data.to(device, non_blocking=True)

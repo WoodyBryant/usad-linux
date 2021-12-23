@@ -199,7 +199,7 @@ if __name__ == '__main__':
     # directory = get_arg(2, './').strip()
 
     url = ' https://drive.google.com/open?id=1iDYc0OEmidN712fquOBRFjln90SbpaE7'
-    directory =  r'C:\Users\Administrator\Desktop\usad-master\input'
+    directory =  r'E:\github_desktop\usad-linux\usad-linux\input\input'
     id = ''
 
     if not url:

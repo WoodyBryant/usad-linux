@@ -3,7 +3,9 @@ import torch.nn as nn
 
 from utils import *
 device = get_default_device()
-
+##nn.Linear主要用来设置全连接层，全连接层的输入是二维张量(batch_size,size)
+##nn.Linear(in_features,out_features)，第一个参数是输入的二维张量的大小，即(bartch_size,size)中的size,
+##第二个参数是指输出二维张量的大小，即(bartch_size,out_size)中的out_size，也代表了全连接层的神经元的个数。
 class Encoder(nn.Module):
   def __init__(self, in_size, latent_size):
     super().__init__()
@@ -38,14 +40,17 @@ class Decoder(nn.Module):
     out = self.linear3(out)
     w = self.sigmoid(out)
     return w
-    
+##nn.Module是所有神经网络的基类，所有神经网络模型都要继承这个类
+##UsadModel定义了一个编码器encoder和两个解码器decoder，他们都是由全连接层组成的。他们组成了两个自编码器
 class UsadModel(nn.Module):
   def __init__(self, w_size, z_size):
     super().__init__()
     self.encoder = Encoder(w_size, z_size)
     self.decoder1 = Decoder(z_size, w_size)
     self.decoder2 = Decoder(z_size, w_size)
-  
+  ##两个自编码器的训练过程
+  ##AE1的loss1要最小化AE1的重组误差和AE2(AE1(W))和W的重组误差
+  ##AE2的loss2要最小化AE2的重组误差和最大化AE2(AE1(W))和W的重组误差
   def training_step(self, batch, n):
     z = self.encoder(batch)
     w1 = self.decoder1(z)
@@ -77,13 +82,15 @@ class UsadModel(nn.Module):
 def evaluate(model, val_loader, n):
     outputs = [model.validation_step(to_device(batch,device), n) for [batch] in val_loader]
     return model.validation_epoch_end(outputs)
-
+##训练，优化函数采用了Adam，它使用了梯度的一阶矩估计和二阶矩估计
 def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam):
     history = []
+    ##将两个自编码器的参数都加入优化队列，构成两个优化队列
     optimizer1 = opt_func(list(model.encoder.parameters())+list(model.decoder1.parameters()))
     optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
     for epoch in range(epochs):
         for [batch] in train_loader:
+            ##检查batch的格式
             batch=to_device(batch,device)
             
             #Train AE1
