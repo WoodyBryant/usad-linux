@@ -19,6 +19,7 @@ from usad import *
 device = get_default_device()
 
 ##读取数据，丢掉时间戳、正常/异常标签
+##修改这里的文件读取目录
 normal = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\SWaT_Dataset_Normal_v1.csv")
 normal = normal.drop(["Timestamp" , "Normal/Attack" ] , axis = 1)
 print("正常数据的维度:{0}".format(normal.shape))
@@ -48,6 +49,8 @@ print("正常数据的前两行:\n{0}".format(normal.head(2)))
 #Read data
 #标签设置:正常为0，异常为1
 #丢掉时间戳和Normal/Attack标签
+##读取数据，丢掉时间戳、正常/异常标签
+##修改这里的文件读取目录
 attack = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\SWaT_Dataset_Attack_v0.csv",sep=";")#, nrows=1000)
 labels = [ float(label!= 'Normal' ) for label  in attack["Normal/Attack"]]
 # labels = [ float(label!= 'Normal' ) for label  in attack["Normal/Attack"].values]

@@ -31,6 +31,7 @@ def plot_history(history):
     plt.title('Losses vs. No. of epochs')
     plt.grid()
     plt.show()
+    plt.savefig('./history.jpg')
     
 def histogram(y_test,y_pred):
     plt.figure(figsize=(12,6))
@@ -41,6 +42,7 @@ def histogram(y_test,y_pred):
     plt.title("Results",size=20)
     plt.grid()
     plt.show()
+    plt.savefig('./histogram.jpg')
     
 def ROC(y_test,y_pred):
     fpr,tpr,tr=roc_curve(y_test,y_pred)
@@ -55,6 +57,7 @@ def ROC(y_test,y_pred):
     plt.legend(loc=4)
     plt.grid()
     plt.show()
+    plt.savefig('./roc.jpg')
     return tr[idx]
     
 def confusion_matrix(target, predicted, perc=False):
