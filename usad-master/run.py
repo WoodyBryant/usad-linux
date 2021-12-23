@@ -74,12 +74,12 @@ print("异常数据的前两行:\n{0}".format(attack.head(2)))
 ##它这里原始的窗口数算错了，应该是数据维度-窗口维度+1
 ##正常窗口总的维度(494989，12，51)
 window_size=12
-windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size+1)[:, None]]
+windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None]]
 # print(np.arange(window_size)[None, :])
 # print(np.arange(normal.shape[0]-window_size)[:, None])
 # print(np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None])
 print("正常窗口的总维度:{0}".format(windows_normal.shape))
-windows_attack=attack.values[np.arange(window_size)[None, :] + np.arange(attack.shape[0]-window_size+1)[:, None]]
+windows_attack=attack.values[np.arange(window_size)[None, :] + np.arange(attack.shape[0]-window_size)[:, None]]
 print("攻击窗口的总维度:{0}".format(windows_attack.shape))
 
 
@@ -119,26 +119,30 @@ test_loader = torch.utils.data.DataLoader(data_utils.TensorDataset(
 model = UsadModel(w_size, z_size)
 ##检查模型的格式
 model = to_device(model,device)
+##得到历次迭代中的验证集的loss1和loss2
 history = training(N_EPOCHS,model,train_loader,val_loader)
-# plot_history(history)
+plot_history(history)
+##保存模型等参数，想恢复某一个阶段的训练时，就可以读取之前保存的网络模型参数
+torch.save({
+            'encoder': model.encoder.state_dict(),
+            'decoder1': model.decoder1.state_dict(),
+            'decoder2': model.decoder2.state_dict()
+            }, "model.pth")
 
-# torch.save({
-#             'encoder': model.encoder.state_dict(),
-#             'decoder1': model.decoder1.state_dict(),
-#             'decoder2': model.decoder2.state_dict()
-#             }, "model.pth")
+#Testing
+#读取之前保存的模型参数
+checkpoint = torch.load("model.pth")
 
-# #Testing
-# checkpoint = torch.load("model.pth")
-
-# model.encoder.load_state_dict(checkpoint['encoder'])
-# model.decoder1.load_state_dict(checkpoint['decoder1'])
-# model.decoder2.load_state_dict(checkpoint['decoder2'])
-# results=testing(model,test_loader)
-# windows_labels=[]
-# for i in range(len(labels)-window_size):
-#     windows_labels.append(list(np.int_(labels[i:i+window_size])))
-# y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
-# y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
-#                               results[-1].flatten().detach().cpu().numpy()])
-# threshold=ROC(y_test,y_pred)
+model.encoder.load_state_dict(checkpoint['encoder'])
+model.decoder1.load_state_dict(checkpoint['decoder1'])
+model.decoder2.load_state_dict(checkpoint['decoder2'])
+##异常分数
+results=testing(model,test_loader)
+##画ROC曲线
+windows_labels=[]
+for i in range(len(labels)-window_size):
+    windows_labels.append(list(np.int_(labels[i:i+window_size])))
+y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
+y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
+                              results[-1].flatten().detach().cpu().numpy()])
+threshold=ROC(y_test,y_pred)

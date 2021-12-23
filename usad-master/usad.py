@@ -51,6 +51,7 @@ class UsadModel(nn.Module):
   ##两个自编码器的训练过程
   ##AE1的loss1要最小化AE1的重组误差和AE2(AE1(W))和W的重组误差
   ##AE2的loss2要最小化AE2的重组误差和最大化AE2(AE1(W))和W的重组误差
+  ##但是计算loss这块有点过于简单
   def training_step(self, batch, n):
     z = self.encoder(batch)
     w1 = self.decoder1(z)
@@ -71,9 +72,11 @@ class UsadModel(nn.Module):
         
   def validation_epoch_end(self, outputs):
     batch_losses1 = [x['val_loss1'] for x in outputs]
+    ##torch.stack,将若干个张量在维度上连接，比如原来有几个2维张量，连接后就可以得到3维张量
     epoch_loss1 = torch.stack(batch_losses1).mean()
     batch_losses2 = [x['val_loss2'] for x in outputs]
     epoch_loss2 = torch.stack(batch_losses2).mean()
+    ##item是为了得到元素张量里面的元素值，就是将一个零维张量转换为浮点数，特别是计算loss和accuracy的时候
     return {'val_loss1': epoch_loss1.item(), 'val_loss2': epoch_loss2.item()}
     
   def epoch_end(self, epoch, result):
@@ -95,8 +98,11 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             
             #Train AE1
             loss1,loss2 = model.training_step(batch,epoch+1)
+            ##梯度反向传播
             loss1.backward()
+            ##更新所有的参数
             optimizer1.step()
+            ##情况过往梯度
             optimizer1.zero_grad()
             
             
@@ -106,12 +112,12 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer2.step()
             optimizer2.zero_grad()
             
-            
+        ##得到单次迭代的loss1和loss2
         result = evaluate(model, val_loader, epoch+1)
         model.epoch_end(epoch, result)
         history.append(result)
     return history
-    
+##验证阶段，两个误差加起来求异常分数
 def testing(model, test_loader, alpha=.5, beta=.5):
     results=[]
     for [batch] in test_loader:
