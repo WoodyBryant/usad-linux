@@ -1,6 +1,6 @@
 # 运行说明
 
-声明:本项目根据论文usad的开源代码改编，更方便运行，仅用于学习，原项目请看usad论文的原始开源项目，欢迎大家一起交流学习!
+声明:本项目根据论文usad的开源代码改编，将Jupyter版本的主函数代码整合到一个.py文件，并给代码的重要部分进行了注释，方便阅读和运行原项目请看usad论文的原始开源项目，欢迎大家一起交流学习!
 
 1 安装PyTorch 1.6.0，CUDA 10.1,Pandas,Seaborn,Sklearn,Matplotlib(to allow use of GPU, not compulsory)
 
