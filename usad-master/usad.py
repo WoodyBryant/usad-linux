@@ -6,6 +6,7 @@ device = get_default_device()
 ##nn.Linear主要用来设置全连接层，全连接层的输入是二维张量(batch_size,size)
 ##nn.Linear(in_features,out_features)，第一个参数是输入的二维张量的大小，即(bartch_size,size)中的size,
 ##第二个参数是指输出二维张量的大小，即(bartch_size,out_size)中的out_size，也代表了全连接层的神经元的个数。
+##标准的神经网络的结构
 class Encoder(nn.Module):
   def __init__(self, in_size, latent_size):
     super().__init__()
@@ -68,7 +69,9 @@ class UsadModel(nn.Module):
     w3 = self.decoder2(self.encoder(w1))
     loss1 = 1/n*torch.mean((batch-w1)**2)+(1-1/n)*torch.mean((batch-w3)**2)
     loss2 = 1/n*torch.mean((batch-w2)**2)-(1-1/n)*torch.mean((batch-w3)**2)
-    return {'val_loss1': loss1, 'val_loss2': loss2}
+    ##这里用来返回验证集的最大异常分数
+    anomaly_score = 0.5*torch.mean((batch-w1)**2)+0.5*torch.mean((batch-w3)**2)
+    return {'val_loss1': loss1, 'val_loss2': loss2,'anomaly_score':anomaly_score}
         
   def validation_epoch_end(self, outputs):
     batch_losses1 = [x['val_loss1'] for x in outputs]
@@ -76,8 +79,12 @@ class UsadModel(nn.Module):
     epoch_loss1 = torch.stack(batch_losses1).mean()
     batch_losses2 = [x['val_loss2'] for x in outputs]
     epoch_loss2 = torch.stack(batch_losses2).mean()
+    
+    batch_anomaly_score = [x['anomaly_score'] for x in outputs]
+    epoch_anomaly_score = torch.stack(batch_anomaly_score).max()
+    
     ##item是为了得到元素张量里面的元素值，就是将一个零维张量转换为浮点数，特别是计算loss和accuracy的时候
-    return {'val_loss1': epoch_loss1.item(), 'val_loss2': epoch_loss2.item()}
+    return {'val_loss1': epoch_loss1.item(), 'val_loss2': epoch_loss2.item(),'anomaly_score':epoch_anomaly_score.item()}
     
   def epoch_end(self, epoch, result):
     print("Epoch [{}], val_loss1: {:.4f}, val_loss2: {:.4f}".format(epoch, result['val_loss1'], result['val_loss2']))
@@ -93,7 +100,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
     optimizer2 = opt_func(list(model.encoder.parameters())+list(model.decoder2.parameters()))
     for epoch in range(epochs):
         for [batch] in train_loader:
-            ##检查batch的格式
+            ##将每一个batch存入设备
             batch=to_device(batch,device)
             
             #Train AE1
@@ -112,7 +119,7 @@ def training(epochs, model, train_loader, val_loader, opt_func=torch.optim.Adam)
             optimizer2.step()
             optimizer2.zero_grad()
             
-        ##得到单次迭代的loss1和loss2
+        ##得到单次迭代后验证集的loss1和loss2
         result = evaluate(model, val_loader, epoch+1)
         model.epoch_end(epoch, result)
         history.append(result)
