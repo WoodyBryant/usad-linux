@@ -63,6 +63,7 @@ class UsadModel(nn.Module):
     return loss1,loss2
 
   def validation_step(self, batch, n):
+    ##batch是二维的
     z = self.encoder(batch)
     w1 = self.decoder1(z)
     w2 = self.decoder2(z)

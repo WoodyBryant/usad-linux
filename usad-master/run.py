@@ -22,8 +22,8 @@ device = get_default_device()
 
 ##读取数据，丢掉时间戳、正常/异常标签
 ##修改这里的文件读取目录
-normal = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\SWaT_Dataset_Normal_v1.csv")
-normal = normal.drop(["Timestamp" , "Normal/Attack" ] , axis = 1)
+normal = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\swat_train.csv")
+normal = normal.drop(["timestamp" , "attack" ] , axis = 1)
 print("正常数据的维度:{0}".format(normal.shape))
 
 
@@ -53,16 +53,24 @@ print("正常数据的前两行:\n{0}".format(normal.head(2)))
 #丢掉时间戳和Normal/Attack标签
 ##读取数据，丢掉时间戳、正常/异常标签
 ##修改这里的文件读取目录
-attack = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\SWaT_Dataset_Attack_v0.csv",sep=";")#, nrows=1000)
-labels = [ float(label!= 'Normal' ) for label  in attack["Normal/Attack"]]
+attack = pd.read_csv(r"E:\github_desktop\usad-linux\usad-linux\input\swat_test.csv")#, nrows=1000)
+
+
+labels = attack['attack']
+
 # labels = [ float(label!= 'Normal' ) for label  in attack["Normal/Attack"].values]
-attack = attack.drop(["Timestamp" , "Normal/Attack" ] , axis = 1)
+attack = attack.drop(["timestamp" , "attack" ] , axis = 1)
 print("攻击数据的维度:{0}".format(attack.shape))
 # attack.to_csv(r"E:\github_desktop\usad-linux\usad-linux\input\test_attack.csv")
 # Transform all columns into float64
 for i in list(attack):
     attack[i]=attack[i].apply(lambda x: str(x).replace("," , "."))
 attack = attack.astype(float)
+
+
+
+
+
 
 #Normalization
 # x = attack.values 
@@ -78,7 +86,7 @@ print("异常数据的前两行:\n{0}".format(attack.head(2)))
 #分别将第一个的行和第二个的列广播扩充，两个加起来得到一个二维数组就起到了滑动窗口的效果，结果中的每一行有12个数据的索引，就是一个滑动窗口，行数是494988
 ##正常窗口总的维度(494988，window_size，51)即(总窗口数，窗口尺寸，窗口中每条数据的特征数)
 ##.values，根据索引取值
-##原来代码窗口是12，论文中best是10;5;2;1
+##原来代码窗口是12，论文中best是10;
 window_size=12
 windows_normal=normal.values[np.arange(window_size)[None, :] + np.arange(normal.shape[0]-window_size)[:, None]]
 # print(np.arange(window_size)[None, :])
@@ -94,7 +102,7 @@ print("攻击窗口的总维度:{0}".format(windows_attack.shape))
 import torch.utils.data as data_utils
 
 BATCH_SIZE =  7919
-N_EPOCHS = 100
+N_EPOCHS = 2
 hidden_size = 100
 ##w_size是一个滑动窗口中的数据的总维度(窗口长度*特征数)，也是输入的维度
 ##z_size是encoder输出的尺寸窗口长度*hidden_size
@@ -163,12 +171,29 @@ y_test = [1.0 if (np.sum(window) > 0) else 0 for window in windows_labels ]
 y_pred=np.concatenate([torch.stack(results[:-1]).flatten().detach().cpu().numpy(),
                               results[-1].flatten().detach().cpu().numpy()])
 threshold=ROC(y_test,y_pred)
-##打印异常分数
-#print(y_pred)
 
-##进行异常判断
 
-##一个一个试
+#打印异常分数
+# print(max(y_pred))
+# y_pred1 = list(y_pred)
+# y_pred1.sort()
+# plt.plot(y_pred1)
+# plt.show()
+
+
+#进行异常判断
+
+#计算TP,FP
+def TP_FP(y_true, y_pred):
+    TP, FP, TN, FN = 0, 0, 0, 0
+
+    for i in range(len(y_true)):
+        if y_true[i] == 1 and y_pred[i] == 1:
+           TP += 1
+        if y_true[i] == 0 and y_pred[i] == 1:
+           FP += 1
+    return TP,FP
+# 一个一个试
 for threshold_anomaly_score in np.linspace(0.,1.0,11):
     y_pred_anomaly = [1.0 if (x>=threshold_anomaly_score) else 0 for x in y_pred ]
     #print(y_pred_anomaly)
@@ -177,18 +202,21 @@ for threshold_anomaly_score in np.linspace(0.,1.0,11):
     p = precision_score(y_test, y_pred_anomaly, average='binary')
     r = recall_score(y_test, y_pred_anomaly, average='binary')
     f1score = f1_score(y_test, y_pred_anomaly, average='binary')
+    TP,FP = TP_FP(y_test,y_pred_anomaly)
     print("threshold_anomaly_score:{}".format(threshold_anomaly_score))
     print("P = {0}\nR = {1}\nf1score = {2}".format(p,r,f1score))
+    print("TP ={}\nFP ={}".format(TP,FP))
     print("\n")
+
     
-    
-##验证集的最大异常分数    
+# # 验证集的最大异常分数/或其他 
+# threshold_anomaly_score = 1
 # y_pred_anomaly = [1.0 if (x>=threshold_anomaly_score) else 0 for x in y_pred ]
 # #print(y_pred_anomaly)
-
 # ##计算精确率、召回率、f1_score
 # p = precision_score(y_test, y_pred_anomaly, average='binary')
 # r = recall_score(y_test, y_pred_anomaly, average='binary')
 # f1score = f1_score(y_test, y_pred_anomaly, average='binary')
-# print("P = {0}\n R = {1}\n f1score = {2}".format(p,r,f1score))
+# print("threshold_anomaly_score:{}".format(threshold_anomaly_score))
+# print("P = {0}\nR = {1}\nf1score = {2}".format(p,r,f1score))
 
