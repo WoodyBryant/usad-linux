@@ -4,7 +4,7 @@
 
 1 安装PyTorch 1.6.0，CUDA 10.1,Pandas,Seaborn,Sklearn,Matplotlib(to allow use of GPU, not compulsory)
 
-2 修改gdrivedl.py中的下载网址和保存文件夹，然后运行两次，分别下载正常数据集和异常数据集，保存到input文件夹中
+2 修改gdrivedl.py中的下载网址和保存文件夹，然后运行两次，分别下载正常数据集和异常数据集，保存到input文件夹中(或者使用文件夹下已经处理好的数据集)
 
 3 修改run.py中的相关文件路径后，运行run.py
 
